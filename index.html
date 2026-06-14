@@ -98,7 +98,7 @@
             <p>We're so excited to see you again!</p>
             
             <span class="input-label">Username</span>
-            <input type="text" id="usernameInput" class="input-box" placeholder="Type Shravan">
+            <input type="text" id="usernameInput" class="input-box">
             
             <span class="input-label">Email</span>
             <input type="email" id="emailInput" class="input-box">
@@ -211,7 +211,6 @@
                 document.getElementById('welcomeDesc').innerText = `This is the start of the #${currentChannel} channel.`;
                 messageInput.placeholder = `Message #${currentChannel}`;
                 
-                // Reset standard display stack elements on channel transition
                 messagesStack.innerHTML = '';
             });
         });
@@ -252,7 +251,6 @@
         messageInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') dispatchMsg(); });
 
         socket.on('chat message', (data) => {
-            // Filter incoming stream prefix blocks matching channels
             const prefix = `[#${currentChannel}]`;
             let displayText = data.text;
             
