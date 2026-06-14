@@ -17,6 +17,14 @@
         .input-box { width: 100%; padding: 10px; border-radius: 4px; border: none; background-color: #1e1f22; color: #fff; outline: none; font-size: 16px; }
         .submit-action { width: 100%; padding: 12px; border-radius: 4px; border: none; background-color: #5865f2; color: #fff; font-weight: 500; cursor: pointer; font-size: 16px; margin-top: 24px; transition: background-color 0.2s; }
         .submit-action:hover { background-color: #4752c4; }
+        
+        /* Toggle link style matching Discord link styling */
+        .auth-toggle-link { text-align: left; font-size: 14px; color: #949ba4; margin-top: 16px; }
+        .auth-toggle-link span { color: #00a8fc; cursor: pointer; }
+        .auth-toggle-link span:hover { text-decoration: underline; }
+
+        /* Dynamic classes to manage visibility state */
+        .hidden-field { display: none; }
 
         /* ================= THREE-COLUMN INTERFACE ================= */
         .app-window { display: flex; width: 100%; height: 100%; visibility: hidden; opacity: 0; transition: opacity 0.3s ease; }
@@ -37,7 +45,7 @@
         .channel-item.active { background-color: #404249; color: #fff; }
         .channel-item span { color: #80848e; font-size: 20px; font-weight: 400; }
 
-        /* PROFILE FOOLER BOTTOM PANEL */
+        /* PROFILE FOOTER BOTTOM PANEL */
         .user-footer-badge { height: 52px; background-color: #232428; display: flex; align-items: center; padding: 0 8px; gap: 8px; flex-shrink: 0; }
         .user-pfp { width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; text-transform: uppercase; position: relative; }
         .user-status-online { position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; background-color: #23a55a; border-radius: 50%; border: 2px solid #232428; }
@@ -94,11 +102,13 @@
 
     <div class="login-screen" id="loginScreen">
         <div class="form-card">
-            <h2>Welcome back!</h2>
-            <p>We're so excited to see you again!</p>
+            <h2 id="authTitle">Welcome back!</h2>
+            <p id="authSubtitle">We're so excited to see you again!</p>
             
-            <span class="input-label">Username</span>
-            <input type="text" id="usernameInput" class="input-box">
+            <div id="usernameWrapper" class="hidden-field">
+                <span class="input-label">Username</span>
+                <input type="text" id="usernameInput" class="input-box">
+            </div>
             
             <span class="input-label">Email</span>
             <input type="email" id="emailInput" class="input-box">
@@ -107,6 +117,10 @@
             <input type="password" id="passwordInput" class="input-box">
             
             <button class="submit-action" id="submitAuthBtn">Log In</button>
+
+            <div class="auth-toggle-link" id="authToggleContainer">
+                Need an account? <span id="authToggleBtn">Register</span>
+            </div>
         </div>
     </div>
 
@@ -187,17 +201,44 @@
         const socket = io();
         let myUsername = "";
         let currentChannel = "general";
+        let isRegisterMode = false;
 
         const loginScreen = document.getElementById('loginScreen');
         const appWindow = document.getElementById('appWindow');
         const submitAuthBtn = document.getElementById('submitAuthBtn');
         const usernameInput = document.getElementById('usernameInput');
+        const usernameWrapper = document.getElementById('usernameWrapper');
         const emailInput = document.getElementById('emailInput');
         const passwordInput = document.getElementById('passwordInput');
         const messagesStack = document.getElementById('messagesStack');
         const messageInput = document.getElementById('messageInput');
         const ownerControlBlock = document.getElementById('ownerControlBlock');
         const chatContainer = document.getElementById('chatContainer');
+        
+        const authTitle = document.getElementById('authTitle');
+        const authSubtitle = document.getElementById('authSubtitle');
+        const authToggleBtn = document.getElementById('authToggleBtn');
+        const authToggleContainer = document.getElementById('authToggleContainer');
+
+        // Toggle Between Login and Registration layouts
+        authToggleBtn.addEventListener('click', () => {
+            isRegisterMode = !isRegisterMode;
+            if (isRegisterMode) {
+                authTitle.innerText = "Create an account";
+                authSubtitle.innerText = "Join the server today!";
+                usernameWrapper.classList.remove('hidden-field');
+                submitAuthBtn.innerText = "Continue";
+                authToggleContainer.innerHTML = 'Already have an account? <span id="authToggleBtn">Log In</span>';
+            } else {
+                authTitle.innerText = "Welcome back!";
+                authSubtitle.innerText = "We're so excited to see you again!";
+                usernameWrapper.classList.add('hidden-field');
+                submitAuthBtn.innerText = "Log In";
+                authToggleContainer.innerHTML = 'Need an account? <span id="authToggleBtn">Register</span>';
+            }
+            // Re-bind click handler since the innerHTML is redrawn dynamically
+            document.getElementById('authToggleBtn').addEventListener('click', arguments.callee);
+        });
 
         // Dynamic Channel Switching Interface Logic
         document.querySelectorAll('.channel-item').forEach(item => {
@@ -219,9 +260,10 @@
             const data = {
                 email: emailInput.value.trim(),
                 password: passwordInput.value,
-                username: usernameInput.value.trim() || null
+                username: isRegisterMode ? usernameInput.value.trim() : null
             };
             if(!data.email || !data.password) return alert("All credentials fields must be populated.");
+            if(isRegisterMode && !data.username) return alert("Username field is required for registration.");
             socket.emit('auth user', data);
         });
 
