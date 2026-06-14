@@ -8,111 +8,92 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Initialize a lightweight local database file
+// Initialize persistent storage file
 const db = Datastore.create({ filename: 'nexus_data.db', autoload: true });
 
 app.use(express.static(__dirname));
 
-// Shravan is now officially configured as the root administrator
+// Primary privilege identity setting
 const SUPER_ADMIN_USERNAME = "Shravan"; 
 
 io.on('connection', (socket) => {
     let sessionUser = null;
 
-    // Handles user authentication (Login/Registration combo)
+    // Direct Login / Registration execution block
     socket.on('auth user', async (data) => {
         try {
             const { email, password, username } = data;
             const existingUser = await db.findOne({ email: email.toLowerCase() });
 
             if (existingUser) {
-                // User exists, attempt Login validation
                 if (existingUser.isBanned) {
-                    return socket.emit('auth error', 'Your account has been banned from Nexus.');
+                    return socket.emit('auth error', 'Your profile is currently restricted from access.');
                 }
-                const passwordMatch = await bcrypt.compare(password, existingUser.password);
-                if (!passwordMatch) {
-                    return socket.emit('auth error', 'Invalid email or password identity.');
+                const match = await bcrypt.compare(password, existingUser.password);
+                if (!match) {
+                    return socket.emit('auth error', 'Invalid credentials.');
                 }
                 sessionUser = existingUser;
             } else {
-                // Registration routine
                 if (!username) {
-                    return socket.emit('auth error', 'Account not found. Please provide a display name to register.');
+                    return socket.emit('auth error', 'Username field is mandatory to create a profile.');
                 }
-                const takenName = await db.findOne({ username: username.trim() });
-                if (takenName) {
-                    return socket.emit('auth error', 'This username is already taken.');
+                const nameTaken = await db.findOne({ username: username.trim() });
+                if (nameTaken) {
+                    return socket.emit('auth error', 'This profile username is already in use.');
                 }
 
-                const hashedPassword = await bcrypt.hash(password, 10);
-                const isSystemAdmin = username.trim() === SUPER_ADMIN_USERNAME;
+                const hashPassword = await bcrypt.hash(password, 10);
+                const checkPrivilege = username.trim() === SUPER_ADMIN_USERNAME;
 
                 const newUser = {
                     email: email.toLowerCase(),
-                    password: hashedPassword,
+                    password: hashPassword,
                     username: username.trim(),
-                    isAdmin: isSystemAdmin,
+                    isAdmin: checkPrivilege,
                     isBanned: false
                 };
 
                 sessionUser = await db.insert(newUser);
             }
 
-            socket.join('global-lounge');
             socket.emit('auth success', {
                 username: sessionUser.username,
                 email: sessionUser.email,
                 isAdmin: sessionUser.isAdmin
             });
-            console.log(`${sessionUser.username} connected to Nexus.`);
+            console.log(`User session online: ${sessionUser.username}`);
         } catch (err) {
-            socket.emit('auth error', 'Internal Database Authentication Fault.');
+            socket.emit('auth error', 'Database structural error encountered.');
         }
-    });
-
-    // Profile updates from inside Settings panel
-    socket.on('update profile', async (newName) => {
-        if (!sessionUser) return;
-        const cleanName = newName.trim();
-        if(!cleanName) return socket.emit('profile error', 'Name cannot be blank.');
-
-        const taken = await db.findOne({ username: cleanName });
-        if (taken && taken._id !== sessionUser._id) {
-            return socket.emit('profile error', 'Username already taken.');
-        }
-
-        await db.update({ _id: sessionUser._id }, { $set: { username: cleanName } });
-        sessionUser.username = cleanName;
-        socket.emit('profile updated', cleanName);
     });
 
     socket.on('chat message', (data) => {
         if (!sessionUser || sessionUser.isBanned) return;
-        io.to('global-lounge').emit('chat message', { user: sessionUser.username, text: data.text });
+        io.emit('chat message', { user: sessionUser.username, text: data.text });
     });
 
-    // ================= ADMIN MODULE COMMAND EXECUTION =================
+    // Pinned Admin control validation engine
     socket.on('admin command', async (data) => {
-        if (!sessionUser || !sessionUser.isAdmin) return socket.emit('admin response', 'Unauthorized access.');
+        if (!sessionUser || !sessionUser.isAdmin) return socket.emit('admin response', 'Action prohibited.');
         const { target, action } = data;
 
-        const targetUser = await db.findOne({ username: target });
-        if (!targetUser) return socket.emit('admin response', 'Target user profile not found.');
-        if (targetUser.username === SUPER_ADMIN_USERNAME) return socket.emit('admin response', 'Cannot modify root Super Admin.');
+        const targetAccount = await db.findOne({ username: target });
+        if (!targetAccount) return socket.emit('admin response', 'Target user configuration does not exist.');
+        if (targetAccount.username === SUPER_ADMIN_USERNAME) return socket.emit('admin response', 'Cannot execute modifiers against root authority.');
 
         if (action === 'ban') {
-            await db.update({ _id: targetUser._id }, { $set: { isBanned: true } });
-            socket.emit('admin response', `Successfully banned user: ${target}`);
+            await db.update({ _id: targetAccount._id }, { $set: { isBanned: true } });
+            socket.emit('admin response', `Successfully restricted: ${target}`);
         } else if (action === 'unban') {
-            await db.update({ _id: targetUser._id }, { $set: { isBanned: false } });
-            socket.emit('admin response', `Successfully unbanned user: ${target}`);
+            await db.update({ _id: targetAccount._id }, { $set: { isBanned: false } });
+            socket.emit('admin response', `Reversed restriction flags for: ${target}`);
         } else if (action === 'makeadmin') {
-            await db.update({ _id: targetUser._id }, { $set: { isAdmin: true } });
-            socket.emit('admin response', `${target} has been promoted to Administrator.`);
+            await db.update({ _id: targetAccount._id }, { $set: { isAdmin: true } });
+            socket.emit('admin response', `Granted privileges to profile: ${target}`);
         }
     });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Nexus engine operating on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server executing successfully on port ${PORT}`));
