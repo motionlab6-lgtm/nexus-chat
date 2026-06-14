@@ -13,8 +13,10 @@ const db = Datastore.create({ filename: 'nexus_data.db', autoload: true });
 
 app.use(express.static(__dirname));
 
-// Primary privilege identity setting
+// ================= SECURITY CONFIGURATION =================
+// Both of these MUST match perfectly for a user to become a root admin
 const SUPER_ADMIN_USERNAME = "Shravan"; 
+const SUPER_ADMIN_EMAIL = "motionlab6@gmail.com"; 
 
 io.on('connection', (socket) => {
     let sessionUser = null;
@@ -23,7 +25,8 @@ io.on('connection', (socket) => {
     socket.on('auth user', async (data) => {
         try {
             const { email, password, username } = data;
-            const existingUser = await db.findOne({ email: email.toLowerCase() });
+            const cleanEmail = email.trim().toLowerCase();
+            const existingUser = await db.findOne({ email: cleanEmail });
 
             if (existingUser) {
                 if (existingUser.isBanned) {
@@ -38,18 +41,22 @@ io.on('connection', (socket) => {
                 if (!username) {
                     return socket.emit('auth error', 'Username field is mandatory to create a profile.');
                 }
-                const nameTaken = await db.findOne({ username: username.trim() });
+                
+                const cleanUsername = username.trim();
+                const nameTaken = await db.findOne({ username: cleanUsername });
                 if (nameTaken) {
                     return socket.emit('auth error', 'This profile username is already in use.');
                 }
 
+                // SECURITY CHECK: Verifies both name AND email match your admin details
+                const checkPrivilege = (cleanUsername === SUPER_ADMIN_USERNAME && cleanEmail === SUPER_ADMIN_EMAIL.toLowerCase());
+
                 const hashPassword = await bcrypt.hash(password, 10);
-                const checkPrivilege = username.trim() === SUPER_ADMIN_USERNAME;
 
                 const newUser = {
-                    email: email.toLowerCase(),
+                    email: cleanEmail,
                     password: hashPassword,
-                    username: username.trim(),
+                    username: cleanUsername,
                     isAdmin: checkPrivilege,
                     isBanned: false
                 };
@@ -78,9 +85,13 @@ io.on('connection', (socket) => {
         if (!sessionUser || !sessionUser.isAdmin) return socket.emit('admin response', 'Action prohibited.');
         const { target, action } = data;
 
-        const targetAccount = await db.findOne({ username: target });
+        const targetAccount = await db.findOne({ username: target.trim() });
         if (!targetAccount) return socket.emit('admin response', 'Target user configuration does not exist.');
-        if (targetAccount.username === SUPER_ADMIN_USERNAME) return socket.emit('admin response', 'Cannot execute modifiers against root authority.');
+        
+        // Block actions targeting the root admin account
+        if (targetAccount.username === SUPER_ADMIN_USERNAME && targetAccount.email === SUPER_ADMIN_EMAIL.toLowerCase()) {
+            return socket.emit('admin response', 'Cannot execute modifiers against root authority.');
+        }
 
         if (action === 'ban') {
             await db.update({ _id: targetAccount._id }, { $set: { isBanned: true } });
