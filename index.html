@@ -3,151 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nexus</title>
+    <title>Discord Studio</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { display: flex; height: 100vh; background-color: #090a0f; color: #dcddde; overflow: hidden; }
+        body { display: flex; height: 100vh; background-color: #313338; color: #dbdee1; overflow: hidden; }
         
-        /* ================= PREMIUM RE-DESIGNED LOGIN GATEWAY ================= */
-        .login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #090a0f; display: flex; z-index: 100; transition: all 0.4s ease; }
+        /* ================= AUTH PRE-GATEWAY ================= */
+        .login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #1e1f22; display: flex; align-items: center; justify-content: center; z-index: 100; }
+        .form-card { background-color: #313338; padding: 32px; border-radius: 8px; width: 100%; max-width: 480px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center; }
+        .form-card h2 { color: #fff; margin-bottom: 8px; font-size: 24px; }
+        .form-card p { color: #b5bac1; font-size: 14px; margin-bottom: 20px; }
+        .input-box { width: 100%; padding: 10px; margin-bottom: 16px; border-radius: 4px; border: none; background-color: #1e1f22; color: #fff; outline: none; }
+        .submit-action { width: 100%; padding: 12px; border-radius: 4px; border: none; background-color: #5865f2; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; }
+        .submit-action:hover { background-color: #4752c4; }
+
+        /* ================= DISCORD 3-COLUMN WORKSPACE ================= */
+        .app-window { display: flex; width: 100%; height: 100%; visibility: hidden; opacity: 0; transition: opacity 0.3s ease; }
         
-        /* Left Hero Panel */
-        .login-hero { flex: 1; padding: 60px; display: flex; flex-direction: column; justify-content: space-between; background: radial-gradient(circle at 10% 10%, #14161f 0%, #090a0f 80%); border-right: 1px solid #161920; }
-        .hero-logo { display: flex; align-items: center; gap: 10px; }
-        .logo-box { background-color: #ff5a00; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 18px; }
-        .logo-text { font-size: 20px; font-weight: bold; color: #fff; letter-spacing: 0.5px; }
-        .hero-main h1 { font-size: 56px; font-weight: 800; lineHeight: 1.1; margin-bottom: 24px; color: #fff; }
-        .hero-main h1 span { color: #ff5a00; }
-        .hero-main p { color: #8a8f98; font-size: 16px; line-height: 1.5; margin-bottom: 30px; max-width: 500px; }
-        .hero-badges { display: flex; gap: 10px; }
-        .badge { background-color: #13151c; padding: 8px 16px; border-radius: 20px; font-size: 13px; color: #8a8f98; border: 1px solid #1e222b; }
-        .hero-footer { color: #3c424e; font-size: 13px; }
+        /* COLUMN 1: SERVER NAVIGATION NAV BAR */
+        .guilds-nav { width: 72px; background-color: #1e1f22; display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 8px; }
+        .guild-circle { width: 48px; height: 48px; border-radius: 50%; background-color: #313338; display: flex; align-items: center; justify-content: center; color: #dbdee1; font-weight: bold; cursor: pointer; transition: all 0.2s ease; font-size: 16px; }
+        .guild-circle:hover, .guild-circle.active { border-radius: 16px; background-color: #5865f2; color: #fff; }
 
-        /* Right Form Panel */
-        .login-form-side { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; }
-        .form-container { width: 100%; max-width: 380px; }
-        .form-container h2 { font-size: 32px; font-weight: 700; margin-bottom: 8px; color: #fff; }
-        .form-container p { color: #8a8f98; font-size: 14px; margin-bottom: 24px; }
+        /* COLUMN 2: SUB-CHANNELS NAVIGATION BAR */
+        .channels-sidebar { width: 240px; background-color: #2b2d31; display: flex; flex-direction: column; }
+        .channels-header { height: 48px; border-bottom: 1px solid #1f2023; display: flex; align-items: center; padding: 0 16px; font-weight: bold; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.2); font-size: 15px; }
+        .channels-list { flex: 1; padding: 8px; }
+        .category-row { font-size: 12px; font-weight: 700; color: #949ba4; text-transform: uppercase; letter-spacing: 0.25px; padding: 8px; display: flex; align-items: center; }
+        .channel-item { padding: 6px 8px; border-radius: 4px; color: #949ba4; cursor: pointer; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; font-size: 14px; }
+        .channel-item:hover { background-color: #35373c; color: #dbdee1; }
+        .channel-item.active { background-color: #404249; color: #fff; }
+        .channel-item span { color: #80848e; font-size: 18px; margin-right: 2px; }
+
+        /* PROFILE FOLLOWER BADGE ACCENT */
+        .user-footer-badge { height: 52px; background-color: #232428; display: flex; align-items: center; padding: 0 8px; gap: 8px; }
+        .user-pfp { width: 32px; height: 32px; border-radius: 50%; background-color: #5865f2; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+        .user-text-meta { flex: 1; overflow: hidden; }
+        .user-text-meta h4 { font-size: 13px; color: #f2f3f5; font-weight: 600; text-overflow: ellipsis; overflow: hidden; }
+        .user-text-meta p { font-size: 11px; color: #949ba4; }
+
+        /* COLUMN 3: STAGE CONVERSATION INTERFACE */
+        .chat-view-container { flex: 1; display: flex; flex-direction: column; background-color: #313338; }
+        .chat-top-header { height: 48px; border-bottom: 1px solid #1f2023; display: flex; align-items: center; padding: 0 16px; font-weight: 600; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.2); font-size: 15px; gap: 8px; }
+        .chat-top-header span { color: #80848e; font-size: 20px; }
         
-        /* Provider Connections */
-        .oauth-buttons { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        .oauth-btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; font-size: 14px; }
-        .oauth-google { background-color: #fff; color: #000; }
-        .oauth-apple { background-color: #13151c; color: #fff; border: 1px solid #222633 !important; }
-        
-        .divider { display: flex; align-items: center; gap: 10px; margin: 20px 0; color: #3c424e; font-size: 12px; font-weight: 600; }
-        .divider hr { flex: 1; border: none; height: 1px; background-color: #1e222b; }
+        .messages-scrollable { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; }
+        .welcome-title-card { margin-bottom: auto; text-align: left; padding: 32px 0; }
+        .welcome-title-card h1 { font-size: 32px; color: #fff; font-weight: 700; margin-bottom: 8px; }
+        .welcome-title-card p { color: #949ba4; font-size: 14px; }
 
-        /* Traditional Input Handling */
-        .form-group { margin-bottom: 14px; }
-        .login-input { width: 100%; padding: 12px; border-radius: 6px; background-color: #13151c; border: 1px solid #1e222b; color: #fff; outline: none; font-size: 14px; }
-        .login-input:focus { border-color: #ff5a00; }
-        .submit-btn { width: 100%; padding: 12px; border-radius: 6px; border: none; background-color: #ff5a00; color: #fff; font-weight: 600; cursor: pointer; margin-top: 10px; font-size: 15px; }
-        .toggle-auth { color: #ff5a00; cursor: pointer; text-decoration: underline; }
+        .message-entry { display: flex; gap: 16px; margin-top: 16px; }
+        .entry-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #4e5058; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; text-transform: uppercase; }
+        .entry-body { flex: 1; }
+        .entry-header { display: flex; align-items: baseline; gap: 8px; }
+        .entry-author { font-weight: 500; color: #f2f3f5; font-size: 15px; }
+        .entry-timestamp { font-size: 12px; color: #949ba4; }
+        .entry-text { font-size: 15px; color: #dbdee1; margin-top: 4px; line-height: 1.375; }
 
-        /* ================= CORE CORE CORE WORKSPACE APPLICATION ================= */
-        .app-window { display: flex; width: 100%; height: 100%; visibility: hidden; opacity: 0; transition: opacity 0.4s ease; }
-        
-        /* 1. LEFT UTILITY COLUMN (CHANNELS) */
-        .channels-sidebar { width: 240px; background-color: #0f1115; display: flex; flex-direction: column; border-right: 1px solid #161920; }
-        .sidebar-header { height: 48px; border-bottom: 1px solid #161920; display: flex; align-items: center; padding: 0 16px; font-weight: bold; color: #fff; font-size: 15px; }
-        .sidebar-list { flex: 1; padding: 10px; }
-        .section-label { font-size: 11px; font-weight: 700; color: #8a8f98; text-transform: uppercase; padding-left: 8px; margin-bottom: 8px; letter-spacing: 0.5px; }
-        
-        .channel-item { padding: 8px 12px; border-radius: 4px; color: #8a8f98; cursor: pointer; margin-bottom: 4px; font-weight: 500; display: flex; align-items: center; gap: 8px; font-size: 14px; }
-        .channel-item.active { background-color: #1c1f26; color: #fff; }
-        .channel-item span { color: #4f545c; font-weight: bold; }
+        /* MESSAGE BOX CONTAINER BUFFER */
+        .bottom-form-wrapper { padding: 0 16px 24px 16px; }
+        .input-bar-layout { background-color: #383a40; border-radius: 8px; padding: 11px 16px; display: flex; align-items: center; }
+        .input-bar-layout input { flex: 1; background: transparent; border: none; outline: none; color: #dbdee1; font-size: 15px; }
 
-        .user-badge-footer { height: 52px; background-color: #090a0f; display: flex; align-items: center; padding: 0 12px; gap: 10px; border-top: 1px solid #161920; }
-        .avatar { width: 32px; height: 32px; border-radius: 50%; background-color: #ff5a00; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; text-transform: uppercase; font-size: 14px; }
-        .user-info { flex: 1; overflow: hidden; }
-        .user-info h4 { font-size: 13px; font-weight: 600; color: #fff; text-overflow: ellipsis; overflow: hidden; }
-        .user-info p { font-size: 11px; color: #8a8f98; }
+        /* COLUMN 4: INLINE ACTIVE MEMBER SLIDER */
+        .members-sidebar { width: 240px; background-color: #2b2d31; padding: 24px 8px 8px 16px; display: flex; flex-direction: column; gap: 16px; }
+        .group-header { font-size: 12px; font-weight: 700; color: #949ba4; text-transform: uppercase; letter-spacing: 0.25px; margin-bottom: 4px; }
+        .member-item-row { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+        .member-item-row:hover { background-color: #35373c; }
+        .member-avatar-status { width: 32px; height: 32px; border-radius: 50%; background-color: #232428; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; font-size: 13px; }
 
-        /* 2. CENTER STAGE CHAT WINDOW */
-        .chat-panel { flex: 1; display: flex; flex-direction: column; background-color: #0b0c0f; position: relative; }
-        .chat-header { height: 48px; border-bottom: 1px solid #161920; display: flex; align-items: center; padding: 0 16px; font-weight: 600; color: #fff; font-size: 15px; }
-        .chat-header span { color: #8a8f98; margin-right: 6px; }
-
-        .chat-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; justify-content: flex-end; }
-        .empty-welcome-hero { margin-bottom: auto; marginTop: 40px; text-align: center; padding: 40px 0; }
-        .empty-welcome-hero h2 { font-size: 28px; color: #fff; font-weight: 700; }
-        .empty-welcome-hero p { color: #8a8f98; font-size: 14px; margin-top: 4px; }
-        .empty-welcome-hero code { background-color: #13151c; padding: 2px 6px; border-radius: 4px; color: #ff5a00; font-family: monospace; }
-
-        .messages-stack { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; text-align: left; }
-        .message-row { display: flex; gap: 12px; }
-        .msg-avatar { width: 36px; height: 36px; border-radius: 50%; background-color: #3a3f4d; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; text-transform: uppercase; }
-        .msg-content { flex: 1; }
-        .msg-meta { display: flex; align-items: baseline; gap: 8px; }
-        .msg-username { font-weight: 600; color: #fff; font-size: 14px; }
-        .msg-time { font-size: 10px; color: #4f545c; }
-        .msg-text { font-size: 14px; color: #dcddde; margin-top: 4px; line-height: 1.4; }
-
-        .input-wrapper { padding: 0 20px 24px 20px; }
-        .input-box-inner { background-color: #13151c; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
-        .input-box-inner input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 14px; }
-        .input-box-inner button { background-color: #ff5a00; border: none; color: #fff; padding: 6px 14px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 13px; }
-
-        /* 3. RIGHT COLUMN (MEMBERS & SYMMETRICAL SLIDE-IN OWNER MODULE) */
-        .members-sidebar { width: 240px; background-color: #0f1115; border-left: 1px solid #161920; display: flex; flex-direction: column; padding: 16px; gap: 20px; }
-        .member-block-title { font-size: 11px; font-weight: 700; color: #8a8f98; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .member-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-        .member-status-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; color: white; }
-
-        /* Symmetrical Admin Controls mapped matching user requirements */
-        .owner-control-card { background-color: #13151c; padding: 12px; border-radius: 8px; border: 1px solid #e74c3c; display: none; }
-        .owner-control-card p { font-size: 11px; font-weight: 700; color: #e74c3c; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; }
-        .admin-field { width: 100%; padding: 7px 9px; border-radius: 4px; background-color: #0b0c0f; border: 1px solid #222; color: #fff; font-size: 12px; outline: none; margin-bottom: 8px; }
-        .admin-btn { width: 100%; padding: 7px; border-radius: 4px; border: none; background-color: #e74c3c; color: #fff; font-weight: 600; font-size: 12px; cursor: pointer; }
-
-        @media (max-width: 900px) {
-            .login-hero, .members-sidebar { display: none; }
-        }
+        /* ADMIN DRAWER COMPONENT CARD PULLOUT */
+        .admin-sidebar-card { background-color: #1e1f22; padding: 12px; border-radius: 8px; border: 1px solid #f23f43; display: none; margin-bottom: 12px; }
+        .admin-sidebar-card h5 { font-size: 12px; font-weight: 700; color: #f23f43; text-transform: uppercase; margin-bottom: 8px; }
+        .admin-select-input { width: 100%; padding: 6px; margin-bottom: 6px; border-radius: 4px; border: none; background-color: #2b2d31; color: #fff; font-size: 12px; outline: none; }
+        .admin-submit-action { width: 100%; padding: 6px; border-radius: 4px; border: none; background-color: #f23f43; color: #fff; font-weight: 600; font-size: 12px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="login-screen" id="loginScreen">
-        <div class="login-hero">
-            <div class="hero-logo">
-                <div class="logo-box">N</div>
-                <div class="logo-text">Nexus</div>
-            </div>
-            <div class="hero-main">
-                <h1>Where conversations meet <span>community.</span></h1>
-                <p>The chat app that fuses the intimacy of WhatsApp with the energy of Discord. Plus an AI co-pilot that lives in every conversation.</p>
-                <div class="hero-badges">
-                    <div class="badge">DMs & Servers</div>
-                    <div class="badge">Realtime</div>
-                    <div class="badge">@Nexus AI</div>
-                </div>
-            </div>
-            <div class="hero-footer">© 2026 Nexus Labs</div>
+        <div class="form-card">
+            <h2>Welcome back!</h2>
+            <p>We're so excited to see you again!</p>
+            <input type="text" id="usernameInput" class="input-box" placeholder="Username (Type Shravan)">
+            <input type="email" id="emailInput" class="input-box" placeholder="Email Address">
+            <input type="password" id="passwordInput" class="input-box" placeholder="Password">
+            <button class="submit-action" id="submitAuthBtn">Log In</button>
+        </div>
+    </div>
+
+    <div class="app-window" id="appWindow">
+        
+        <div class="guilds-nav">
+            <div class="guild-circle active">N</div>
+            <div style="width: 32px; height: 2px; background-color: #35373c; border-radius: 1px; margin: 4px 0;"></div>
         </div>
 
-        <div class="login-form-side">
-            <div class="form-container">
-                <h2 id="authTitle">Sign in</h2>
-                <p id="authSubtitle">Welcome to Nexus. Secure your identity to continue.</p>
-                
-                <div class="oauth-buttons">
-                    <button type="button" class="oauth-btn oauth-google">Google Connection</button>
-                    <button type="button" class="oauth-btn oauth-apple">Continue with Apple</button>
+        <div class="channels-sidebar">
+            <div class="channels-header">Nexus Lounge</div>
+            <div class="channels-list">
+                <div class="category-row">Text Channels</div>
+                <div class="channel-item active"><span>#</span>general</div>
+                <div class="channel-item"><span>#</span>introductions</div>
+                <div class="channel-item"><span>#</span>random</div>
+            </div>
+            <div class="user-footer-badge">
+                <div class="user-pfp" id="footerAvatar">-</div>
+                <div class="user-text-meta">
+                    <h4 id="footerName">Loading...</h4>
+                    <p>#0001</p>
                 </div>
+            </div>
+        </div>
 
-                <div class="divider">
-                    <hr> OR WITH ACCOUNT <hr>
+        <div class="chat-view-container">
+            <div class="chat-top-header"><span>#</span> general</div>
+            
+            <div class="messages-scrollable" id="chatContainer">
+                <div class="welcome-title-card">
+                    <h1>Welcome to #general!</h1>
+                    <p>This is the start of the #general channel.</p>
                 </div>
+                <div id="messagesStack"></div>
+            </div>
 
-                <div class="form-group" id="regField" style="display: none;">
-                    <input type="text" id="usernameInput" class="login-input" placeholder="Display Username">
+            <div class="bottom-form-wrapper">
+                <div class="input-bar-layout">
+                    <input type="text" id="messageInput" placeholder="Message #general" autocomplete="off">
                 </div>
-                <div class="form-group">
-                    <input type="email" id="emailInput" class="login-input" placeholder="Email Address">
-                </div>
-                <div class="form-group">
-                    <input type="password" id="passwordInput" class="login-input" placeholder="Password">
-                </div>
+            </div>
+        </div>
 
-                <button class="submit-btn" id="submitAuthBtn">Sign In</button
+        <div class="members-sidebar">
+            <div class="admin-sidebar-card" id="ownerControlBlock">
+                <h5>🛡️ Admin Directives</h5>
+                <input type="text" id="adminTarget" class="admin-select-input" placeholder="User identity target">
+                <select id="adminAction" class="admin-select-input">
+                    <option value="ban">Ban User</option>
+                    <option value="unban">Unban User</option>
+                </select>
+                <button class="admin-submit-action" id="executeAdminActionBtn">Execute Command</button>
+            </div>
+
+            <div>
+                <div class="group-header">Online — 2</div>
+                <div class="member-item-row">
+                    <div class="member-avatar-status" style="background-color: #ff5a00;">🤖</div>
+                    <div>
+                        <h4 style="font-size: 14px; color: #ff5a00; font-weight: 500;">Nexus AI</h4>
+                    </div>
+                </div>
+                <div class="member-item-row">
+                    <div class="member-avatar-status" style="background-color: #4e5058;">M</div>
+                    <div>
+                        <h4 style="font-size: 14px; color: #dbdee1; font-weight: 500;">Motion Lab</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let myUsername = "";
+
+        const loginScreen = document.getElementById('loginScreen');
+        const appWindow = document.getElementById('appWindow');
+        const submitAuthBtn = document.getElementById('submitAuthBtn');
+        const usernameInput = document.getElementById('usernameInput');
+        const emailInput = document.getElementById('emailInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const messagesStack = document.getElementById('messagesStack');
+        const messageInput = document.getElementById('messageInput');
+        const ownerControlBlock = document.getElementById('ownerControlBlock');
+
+        submitAuthBtn.addEventListener('click', () => {
+            const data = {
+                email: emailInput.value.trim(),
+                password: passwordInput.value,
+                username: usernameInput.value.trim() || null
+            };
+            if(!data.email || !data.password) return alert("Email and Password parameters are mandatory.");
+            socket.emit('auth user', data);
+        });
+
+        socket.on('auth error', (err) => alert(err));
+
+        socket.on('auth success', (user) => {
+            myUsername = user.username;
+            loginScreen.style.display = "none";
+            appWindow.style.visibility = "visible";
+            appWindow.style.opacity = "1";
+            
+            document.getElementById('footerName').innerText = myUsername;
+            document.getElementById('footerAvatar').innerText = myUsername.charAt(0);
+
+            if (user.isAdmin) {
+                ownerControlBlock.style.display = 'block';
+            }
+        });
+
+        function dispatchMsg() {
+            const text = messageInput.value.trim();
+            if(text) {
+                socket.emit('chat message', { text });
+                messageInput.value = '';
+            }
+        }
+        messageInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') dispatchMsg(); });
+
+        socket.on('chat message', (data) => {
+            const msgRow = document.createElement('div');
+            msgRow.className = 'message-entry';
+            msgRow.innerHTML = `
+                <div class="entry-avatar">${data.user.charAt(0)}</div>
+                <div class="entry-body">
+                    <div class="entry-header">
+                        <span class="entry-author">${data.user}</span>
+                        <span class="entry-timestamp">Today at 5:32 PM</span>
+                    </div>
+                    <p class="entry-text">${data.text}</p>
+                </div>
+            `;
+            messagesStack.appendChild(msgRow);
+            document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        });
+
+        document.getElementById('executeAdminActionBtn').addEventListener('click', () => {
+            const target = document.getElementById('adminTarget').value.trim();
+            const action = document.getElementById('adminAction').value;
+            if(!target) return alert("Please specify a user identity.");
+            socket.emit('admin command', { target, action });
+            document.getElementById('adminTarget').value = '';
+        });
+
+        socket.on('admin response', (msg) => alert(msg));
+    </script>
+</body>
+</html>
